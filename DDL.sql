@@ -1,5 +1,5 @@
-DROP DATABASE tp_db;
-create database tp_db;
+-- DROP DATABASE tp_db;
+--create database tp_db;
 
 use tp_db;
 
@@ -16,6 +16,11 @@ CREATE TABLE EstadoClientes (
 CREATE TABLE EstadoEmpleados (
 	Id VARCHAR(2) PRIMARY KEY,
 	Nombre VARCHAR(255) NOT NULL UNIQUE
+);
+
+CREATE TABLE EstadoServicios (
+    Id VARCHAR(2) PRIMARY KEY,
+    Nombre VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE Empleados(
@@ -45,11 +50,6 @@ CREATE TABLE Servicios (
 	Nombre VARCHAR(255) NOT NULL UNIQUE
 );
 
-CREATE TABLE EstadoServicios (
-    Id VARCHAR(2) PRIMARY KEY,
-    Nombre VARCHAR(255) NOT NULL UNIQUE
-);
-
 CREATE TABLE ServiciosContratados (
 	NroServicio INT PRIMARY KEY IDENTITY(1,1),
 	Telefono INT,
@@ -63,11 +63,11 @@ CREATE TABLE ServiciosContratados (
 	IdEstadoServicio VARCHAR(2),
 
 	FOREIGN KEY (IdCliente) REFERENCES Clientes(Id)
-		ON DELETE RESTRICT
+		ON DELETE NO ACTION
 		ON UPDATE CASCADE,
 	FOREIGN KEY (IdServicio) REFERENCES Servicios(Id)
-		ON DELETE RESTRICT
-		ON UPDATE CASCADE
+		ON DELETE NO ACTION
+		ON UPDATE CASCADE,
 	FOREIGN KEY (IdEstadoServicio) REFERENCES EstadoServicios(Id)
 );
 
@@ -101,19 +101,19 @@ CREATE TABLE Tickets (
 	NroServicio INT,
 	IdCliente INT NOT NULL, 
 	IdEstado VARCHAR(2) NOT NULL,
-	Login VARCHAR(255) NOT NULL,
+	Login VARCHAR(255),
 
 	FOREIGN KEY (IdTipologia) REFERENCES Tipologias(Id)
-		ON DELETE RESTRICT
+		ON DELETE NO ACTION
 		ON UPDATE CASCADE,
 	FOREIGN KEY (NroServicio) REFERENCES ServiciosContratados(NroServicio)
-		ON DELETE RESTRICT
+		ON DELETE NO ACTION
 		ON UPDATE CASCADE,
-	FOREIGN KEY (IdCliente) REFERENCES Clientes(Id),
-		ON DELETE RESTRICT
-		ON UPDATE CASCADE,
+	FOREIGN KEY (IdCliente) REFERENCES Clientes(Id)
+		ON DELETE NO ACTION
+		ON UPDATE NO ACTION,
 	FOREIGN KEY (IdEstado) REFERENCES EstadoTickets(Id)
-		ON DELETE RESTRICT
+		ON DELETE NO ACTION
 		ON UPDATE CASCADE,
 	FOREIGN KEY (Login) REFERENCES Empleados(Login)
 		ON DELETE SET NULL
