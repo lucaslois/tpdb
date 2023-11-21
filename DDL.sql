@@ -40,7 +40,7 @@ CREATE TABLE Clientes (
     NroDoc INT NOT NULL,
     Email VARCHAR(255),
     FechaNacimiento DATE,
-    IdEstado VARCHAR(2),
+    IdEstado VARCHAR(2) NOT NULL,
 
     FOREIGN KEY (IdEstado) REFERENCES EstadoClientes(Id)
 );
@@ -60,7 +60,7 @@ CREATE TABLE ServiciosContratados (
 	Piso INT,
 	Numero VARCHAR(255),
 	Departamento VARCHAR(5),
-	IdEstadoServicio VARCHAR(2),
+	IdEstadoServicio VARCHAR(2) NOT NULL,
 
 	FOREIGN KEY (IdCliente) REFERENCES Clientes(Id)
 		ON DELETE NO ACTION
@@ -101,7 +101,7 @@ CREATE TABLE Tickets (
 	NroServicio INT,
 	IdCliente INT NOT NULL, 
 	IdEstado VARCHAR(2) NOT NULL,
-	Login VARCHAR(255),
+	Login VARCHAR(255) NOT NULL,
 
 	FOREIGN KEY (IdTipologia) REFERENCES Tipologias(Id)
 		ON DELETE NO ACTION
@@ -116,7 +116,7 @@ CREATE TABLE Tickets (
 		ON DELETE NO ACTION
 		ON UPDATE CASCADE,
 	FOREIGN KEY (Login) REFERENCES Empleados(Login)
-		ON DELETE SET NULL
+		ON DELETE NO ACTION
 		ON UPDATE CASCADE
 );
 
