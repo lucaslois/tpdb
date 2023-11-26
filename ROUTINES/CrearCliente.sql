@@ -1,5 +1,5 @@
 CREATE PROCEDURE CrearCliente @apellido varchar(255), @nombre varchar(255), @tipoDocumento char(25),
-                              @nroDocumento char(98), @fechaNacimiento date, @email varchar(50)
+                              @nroDocumento varchar(98), @fechaNacimiento date, @email varchar(50)
 AS
 declare @esMayor bit;
 select @esMayor = dbo.ValidarFechaMayorEdad(@fechaNacimiento)
