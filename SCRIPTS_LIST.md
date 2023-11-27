@@ -31,7 +31,7 @@ Notas:
 * El store procedure actualizara la fecha de resolucion en caso de que el ticket sea movido a estado _Resuelto_.
 * El store procedure actualizara la fecha de cierre en caso de que el ticket sea movido a estado _Cerrado_.
 * Este proceso crea un registro en la tabla `HistoriaLEstados` indicando el cambio.
-
+[GAU]: Y cierra el anterior
 ## CrearCliente (PROCEDURE)
 
 Crea un cliente como prospecto dentro de la base de datos.
@@ -51,12 +51,13 @@ Output:
 |                                         | 1         | El nombre, apellido, tipodoc y nrodoc son obligatorios  |
 |                                         | 2         | El email posee un formato invalido                      |
 |                                         | 3         | Ya existe un cliente con esa combinacion tipodoc/nrodoc |
+|                                         | 4         | El cliente es menor de edad                             |
 
 Notas:
 * Fecha y Email son opcionales
 * En caso que el mail sea enviado debe poseer formato valido
 * Tipo y Nro de documento sean validos y no existe cliente con esa combinacion.
-
+* En caso que el usuario envie la fecha de nacimiento, se valida que sea mayor de 18 años
 ## CrearServicio (PROCEDURE)
 
 Crea un servicio para un cliente en la base de datos.
@@ -66,17 +67,18 @@ Input:
 * @idCliente (int)
 * @telefono (int)
 * @calle (varchar(255))
-* @altura (int)
+* @numero (varchar(25))
 * @piso (int)
 * @depto (varchar(5))
 
 Output:
-| idTicket                                 | ErrorCode | ErrorMessage                   |
-|------------------------------------------|-----------|--------------------------------|
-| Retorna el Nro de Servicoo recien creado |           |                                |
-|                                          | 1         | El tipo de servicio no existee |
-|                                          | 2         | El cliente no existe           |
-|                                          | 3         | La direccion es obligatoria    |
+| idTicket                                 | ErrorCode | ErrorMessage                                                                 |
+|------------------------------------------|-----------|------------------------------------------------------------------------------|
+| Retorna el Nro de Servicoo recien creado |           |                                                                              |
+|                                          | 1         | El tipo de servicio no existee                                               |
+|                                          | 2         | El cliente no existe                                                         |
+|                                          | 3         | La direccion es obligatoria                                                  |
+|                                          | 4         | Debe proporcionarse un telefono para el tipo de servicio VoIP y Telefonia    |
 
 Notas:
 * La fecha de inicio del servicio se establece automáticamente como la fecha actual.
@@ -101,21 +103,20 @@ Output:
 | idTicket                               | ErrorCode | ErrorMessage                                  |
 |----------------------------------------|-----------|-----------------------------------------------|
 | Retorna el ID del Ticket recien creado |           |                                               |
-|                                        | 1         | El Nro de servicio no existe                  |
-|                                        | 2         | El Nro de Servicio no le pertenece al cliente |
-|                                        | 3         | Debe proporcionarse una direccion valida      |
+|                                        | 1         | El Nro de servicio no existe para el usuario  |
 |                                        | 4         | La tipologia no existe                        |
 |                                        | 5         | El cliente no existe                          |
-|                                        | 6         | El login de empleado no existe                |                  |
+|                                        | 6         | El login de empleado no existe                |
+|                                        | 6         | La tipologia no es valida para el servicio    |
 
 Notas:
 * La fecha de apertura del ticket se establece automáticamente como la fecha actual.
 * El estado inicial del ticket es 'AB' (Abierto).
 * Al crear un ticket se creará un registro en la tabla `HistorialEstados` reflejando la creacion.
-* La tipologia debe ser valida.
+* La tipologia debe ser valida y asociable segun el tipo de servicio.
 * El Nro de Servicio debe ser valido.
 * El numero de servicio debe pertenecer al cliente.
-* El login del empleado debe ser valido.
+* El login del empleado debe ser valido. y estar activo.
 
 ## EditarCliente (PROCEDURE)
 
@@ -135,9 +136,10 @@ Output:
 | 2         | El email tiene un formato invalido    |
 | 3         | El nombre y apellido son obligatorios |
 | 4         | El cliente no existe                  |
+| 5         | El cliente debe ser mayor de edad     |
 
 Notas:
-* La edición de la información incluye el nombre, apellido y fecha de nacimiento del cliente.
+* La edición de la información incluye el nombre, apellido, email y fecha de nacimiento del cliente.
 * Solo se permite editar clientes que no estén activos.
 
 ## ExistetTipologiaParaServicio (FUNCTION)
@@ -186,6 +188,7 @@ Output:
 |-----------|---------------------------------------|
 | 1         | El Ticket no existe                   |
 | 2         | El empleado no existe                 |
+| 3         | El empleado no esta activo            |
 
 Acciones:
 * Actualiza el campo 'IdCliente' en la tabla 'Tickets' con el nuevo valor proporcionado para el ticket especificado.
