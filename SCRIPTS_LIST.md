@@ -17,8 +17,20 @@ Input:
 * @idTicket (int)
 * @idEstado (varchar(2))
 
-Errores:
-* El store procedure arrojara un error si el cambio de estado no cumple con las reglas establecidas por el diagrama.
+Output:
+| ErrorCode | ErrorMessage                                                                                       |
+|-----------|----------------------------------------------------------------------------------------------------|
+| 1         | El ID del ticket es invalido                                                                       |
+| 2         | El ID del estado es invalido                                                                       |
+| 3         | Si el ticket esta "Abierto", solo se mueve mover a "En Progreso"                                   |
+| 4         | Si el ticket esta "En Progreso", solo se puede mover a "Resuelto", "Pendiente Cliente" o "Cerrado" |
+| 5         | Si el ticket esta "Pendiente Cliente", solo se puede mover a "En Progreso"                         |
+
+
+Notas:
+* El store procedure actualizara la fecha de resolucion en caso de que el ticket sea movido a estado _Resuelto_.
+* El store procedure actualizara la fecha de cierre en caso de que el ticket sea movido a estado _Cerrado_.
+* Este proceso crea un registro en la tabla `HistoriaLEstados` indicando el cambio.
 
 ## CrearCliente (PROCEDURE)
 
@@ -29,11 +41,21 @@ Input:
 * @apellido (varchar(255))
 * @tipoDocumento (varchar(25))
 * @nroDocumento (varchar(255))
-* @fechaNacimiento date
-* @email (varchar(255))
+* @fechaNacimiento (date) (optional)
+* @email (varchar(255)) (optional)
 
-Errores:
-* El procedimiento arrojará un error si el cliente es menor de edad.
+Output:
+| idCliente                               | ErrorCode | ErrorMessage                                            |
+|-----------------------------------------|-----------|---------------------------------------------------------|
+| Retorna el id del cliente recien creado |           |                                                         |
+|                                         | 1         | El nombre, apellido, tipodoc y nrodoc son obligatorios  |
+|                                         | 2         | El email posee un formato invalido                      |
+|                                         | 3         | Ya existe un cliente con esa combinacion tipodoc/nrodoc |
+
+Notas:
+* Fecha y Email son opcionales
+* En caso que el mail sea enviado debe poseer formato valido
+* Tipo y Nro de documento sean validos y no existe cliente con esa combinacion.
 
 ## CrearServicio (PROCEDURE)
 
@@ -48,12 +70,22 @@ Input:
 * @piso (int)
 * @depto (varchar(5))
 
-Errores:
-* El procedimiento arrojará un error si el cliente no tiene registrado un correo electrónico o una fecha de nacimiento en la base de datos.
+Output:
+| idTicket                                 | ErrorCode | ErrorMessage                   |
+|------------------------------------------|-----------|--------------------------------|
+| Retorna el Nro de Servicoo recien creado |           |                                |
+|                                          | 1         | El tipo de servicio no existee |
+|                                          | 2         | El cliente no existe           |
+|                                          | 3         | La direccion es obligatoria    |
 
 Notas:
 * La fecha de inicio del servicio se establece automáticamente como la fecha actual.
 * El estado inicial del servicio es 'AC' (Activo).
+* El tipo de servicio debe existir en la base de datos.
+* El cliente debe existir en la base de datos.
+* La direccion es obligatoria.
+* Si el cliente no está activo, este pasa a estado activo.
+
 
 ## CrearTicket (PROCEDURE)
 
@@ -62,15 +94,28 @@ Crea un nuevo ticket para un servicio en la base de datos.
 Input:
 * @idTipologia (VARCHAR(2))
 * @nroServicio (INT)
-* @idUsuario (INT)
+* @login (VARCHAR(255))
+* @idCliente (INT))
 
-Errores:
-* El procedimiento arrojará un error si no existe una tipología para el servicio proporcionado.
+Output:
+| idTicket                               | ErrorCode | ErrorMessage                                  |
+|----------------------------------------|-----------|-----------------------------------------------|
+| Retorna el ID del Ticket recien creado |           |                                               |
+|                                        | 1         | El Nro de servicio no existe                  |
+|                                        | 2         | El Nro de Servicio no le pertenece al cliente |
+|                                        | 3         | Debe proporcionarse una direccion valida      |
+|                                        | 4         | La tipologia no existe                        |
+|                                        | 5         | El cliente no existe                          |
+|                                        | 6         | El login de empleado no existe                |                  |
 
 Notas:
 * La fecha de apertura del ticket se establece automáticamente como la fecha actual.
 * El estado inicial del ticket es 'AB' (Abierto).
-* El campo 'Login' se establece como 'amartinez' por defecto.
+* Al crear un ticket se creará un registro en la tabla `HistorialEstados` reflejando la creacion.
+* La tipologia debe ser valida.
+* El Nro de Servicio debe ser valido.
+* El numero de servicio debe pertenecer al cliente.
+* El login del empleado debe ser valido.
 
 ## EditarCliente (PROCEDURE)
 
@@ -81,9 +126,15 @@ Input:
 * @nombre (VARCHAR(255))
 * @apellido (VARCHAR(255))
 * @fechaNacimiento (DATE)
+* @email (VARCHAR(255))
 
-Errores:
-* El procedimiento arrojará un error si se intenta editar un cliente que está activo (con estado 'AC').
+Output:
+| ErrorCode | ErrorMessage                          |
+|-----------|---------------------------------------|
+| 1         | El cliente se encuentra activo        |
+| 2         | El email tiene un formato invalido    |
+| 3         | El nombre y apellido son obligatorios |
+| 4         | El cliente no existe                  |
 
 Notas:
 * La edición de la información incluye el nombre, apellido y fecha de nacimiento del cliente.
@@ -112,22 +163,15 @@ Inactiva un servicio en la base de datos.
 Input:
 * @idServicio (INT)
 
+Output:
+| ErrorCode | ErrorMessage                          |
+|-----------|---------------------------------------|
+| 1         | El servicio no existe                 |
+
 Acciones:
 * Actualiza el estado del servicio (en la tabla 'ServiciosContratados') a 'IN' (Inactivo).
 * Verifica la cantidad de servicios activos para el cliente asociado al servicio inactivado.
 * Si la cantidad de servicios activos para ese cliente es cero, actualiza el estado del cliente (en la tabla 'Clientes') a 'IN' (Inactivo).
-
-## InsertarEnHistorial (TRIGGER)
-
-Este desencadenador (trigger) se activa después de una actualización en la tabla 'Tickets' y registra en la tabla 'HistorialEstados' los cambios en el estado de un ticket.
-
-Acciones:
-* Obtiene el nuevo estado del ticket ('IdEstado') de la tabla 'inserted'.
-* Obtiene el estado anterior del ticket ('IdEstado' antes de la actualización) de la tabla 'deleted'.
-* Obtiene el ID del ticket ('Id') de la tabla 'inserted'.
-* Obtiene la fecha y hora actual.
-* Compara el nuevo estado con el estado anterior.
-* Si hay un cambio en el estado, inserta un registro en la tabla 'HistorialEstados' con el estado anterior, el nuevo estado, el ID del ticket y la fecha y hora de inicio del cambio.
 
 ## ReasignarTicket (PROCEDURE)
 
@@ -135,10 +179,13 @@ Reasigna un ticket a un cliente específico en la base de datos.
 
 Input:
 * @idTicket (INT)
-* @idCliente (INT)
+* @login (VARCHAR(255))
 
-Errores:
-* El procedimiento arrojará un error si se intenta asignar un ticket a un cliente que está inactivo (con estado 'IN').
+Output:
+| ErrorCode | ErrorMessage                          |
+|-----------|---------------------------------------|
+| 1         | El Ticket no existe                   |
+| 2         | El empleado no existe                 |
 
 Acciones:
 * Actualiza el campo 'IdCliente' en la tabla 'Tickets' con el nuevo valor proporcionado para el ticket especificado.
