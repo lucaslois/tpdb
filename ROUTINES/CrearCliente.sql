@@ -12,22 +12,27 @@ AS
 DECLARE
     @esMayor   bit;
 BEGIN
-    select @esMayor = dbo.ValidarFechaMayorEdad(@fechaNacimiento)
+    BEGIN TRY
+    SELECT @esMayor = dbo.ValidarFechaMayorEdad(@fechaNacimiento)
     IF (@fechaNacimiento IS NOT NULL AND @esMayor = 0)
-        SELECT @errorCode = 4, @errorMessage = 'El cliente es menor de edad';
+        RAISERROR ('El cliente es menor de edad', 11, 1)
     ELSE IF(@email IS NOT NULL AND dbo.EmailValido(@email) = 0)
-        SELECT @errorCode = 2, @errorMessage = 'El email posee un formato invalido';
+        RAISERROR ('El email posee un formato invalido', 11, 1)
     ELSE IF(@nombre IS NULL OR @apellido IS NULL OR @tipoDocumento IS NULL OR @nroDocumento IS NULL)
-        SELECT @errorCode = 1, @errorMessage = 'El nombre, apellido, tipodoc y nrodoc son obligatorios';
+        RAISERROR ('El nombre, apellido, tipodoc y nrodoc son obligatorios', 11, 1)
     ELSE IF(EXISTS(SELECT * FROM Clientes WHERE NroDoc = @nroDocumento AND TipoDoc = @tipoDocumento))
-        SELECT @errorCode = 3, @errorMessage = 'Ya existe un cliente con ese tipodoc/nrodoc';
+        RAISERROR ('Ya existe un cliente con ese tipodoc/nrodoc', 11, 1)
     ELSE
         BEGIN
             insert into Clientes (Apellido, Nombre, IdEstado, TipoDoc, NroDoc, FechaNacimiento, Email)
             VALUES (@apellido, @nombre, 'PR', @tipoDocumento, @nroDocumento, @fechaNacimiento, @email);
 
-            SET @idCliente = SCOPE_IDENTITY();
+            SELECT @idCliente = SCOPE_IDENTITY();
         END
+    END TRY
+    BEGIN CATCH 
+        SELECT @errorCode = ERROR_NUMBER(), @errorMessage = ERROR_MESSAGE(), @idCliente = -1
+    END CATCH
 END
 go
 

@@ -1,39 +1,44 @@
-CREATE PROCEDURE CrearTicket @idTipologia VARCHAR(2), @nroServicio INT, @idCliente INT, @login VARCHAR(25)
+CREATE PROCEDURE CrearServicio 
+    @idTipoServicio char(2), 
+    @idCliente int, 
+    @telefono int, 
+    @calle varchar(255), 
+    @altura int,
+    @piso int, 
+    @depto varchar(5),
+    @idServicio INT OUTPUT,
+    @errorMessage VARCHAR(255) OUTPUT,
+    @errorCode INT OUTPUT
 AS
-    DECLARE
-    @idTicket   INT,
-    @errorMessage VARCHAR(255),
-    @errorCode    INT;
+declare
+    @fechaInicio  date    = getdate(),
+    @estado       char(2) = 'AC';
 BEGIN
-    IF NOT EXISTS(SELECT * FROM Tipologias WHERE Id = @idTipologia)
-        SELECT @errorCode = 4, @errorMessage = 'La tipologia no existe'
-    ELSE IF NOT EXISTS(SELECT * FROM ServiciosContratados WHERE NroServicio = @nroServicio AND IdCliente = @idCliente)
-        SELECT @errorCode = 7, @errorMessage = 'El servicio no existe o no le pertenece al usuario'
-    ELSE IF NOT EXISTS(SELECT * FROM Empleados WHERE Login = @login)
-        SELECT @errorCode = 6, @errorMessage = 'El empelado no existe'
-    ELSE IF NOT EXISTS(SELECT * FROM Clientes WHERE Id = @idCliente)
-        SELECT @errorCode = 5, @errorMessage = 'El cliente no existe'
-    ELSE IF (dbo.ExistetTipologiaParaServicio(@nroServicio, @idTipologia) = 0)
-        SELECT @errorCode = 2, @errorMessage = 'No existe dicha tipologia para dicho servicio'
+    BEGIN TRY
+        BEGIN TRAN
+        
+    IF NOT (EXISTS(SELECT * FROM Clientes WHERE Id = @idCliente AND (Email IS NULL OR FechaNacimiento IS NULL)))
+        RAISERROR ('El cliente no existe o no posee un email/fecha de nacimiento', 11, 1);
+    ELSE IF NOT EXISTS(SELECT * FROM Servicios WHERE Id = @idTipoServicio)
+        RAISERROR ('El servicio no existe', 11, 1);
+    ELSE IF (@calle IS NULL OR @altura IS NULL)
+        RAISERROR ('La direccion y altura son obligatorios', 11, 1);
+    ELSE IF (@idTipoServicio IN ('TE', 'VO') AND @telefono IS NULL)
+        RAISERROR ('El telefono es obligatorio para los servicios TE y VO', 11, 1);
     ELSE
-        BEGIN
-            BEGIN TRY
-                BEGIN TRAN
-                    INSERT INTO Tickets (FechaApertura, IdTipologia, NroServicio, IdCliente, IdEstado, Login)
-                    VALUES (getdate(), @idTipologia, @nroServicio, @idCliente, 'AB', 'amartinez')
+        insert ServiciosContratados (IdEstadoServicio, Calle, Numero, Piso, Departamento, FechaInicio,
+                                     IdServicio,
+                                     Telefono, IdCliente)
+        VALUES (@estado, @calle, @altura, @piso, @depto, @fechaInicio, @idTipoServicio, @telefono, @idCliente)
+        UPDATE Clientes set IdEstado = 'AC' WHERE Id = @idCliente
 
-                    SELECT @idTicket = SCOPE_IDENTITY();
-
-                    INSERT INTO HistorialEstados
-                        (ViejoEstado, NuevoEstado, IdTicket, FechaHoraInicio)
-                    VALUES
-                        (NULL, 'AB', @idTicket, GETDATE())
-                COMMIT TRAN
-             END TRY
-            BEGIN CATCH
-                ROLLBACK TRANSACTION
-            END CATCH
-        END
+        SELECT @idServicio = SCOPE_IDENTITY();
+        COMMIT
+    END TRY
+    BEGIN CATCH
+        ROLLBACK
+        SELECT @errorCode = ERROR_NUMBER(), @errorMessage = ERROR_MESSAGE(), @idServicio = -1        
+    END CATCH
 END
 go
 

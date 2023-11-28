@@ -10,18 +10,23 @@ AS
     DECLARE
     @esMayor   bit;
 BEGIN
-    IF (@fechaNacimiento IS NOT NULL AND @esMayor = 0)
-        SELECT @errorCode = 5, @errorMessage = 'El cliente es menor de edad';
-    ELSE IF(@email IS NOT NULL AND dbo.EmailValido(@email) = 0)
-        SELECT @errorCode = 2, @errorMessage = 'El email posee un formato invalido';
-    ELSE IF(@nombre IS NULL OR @apellido IS NULL)
-        SELECT @errorCode = 3, @errorMessage = 'El nombre y apellido son obligatorios';
-    ELSE IF NOT (EXISTS(SELECT Id FROM Clientes WHERE Id = @idCliente))
-        SELECT @errorCode = 4, @errorMessage = 'El cliente no existe';
-    ELSE IF(EXISTS(SELECT Id FROM Clientes WHERE Id = @idCliente AND IdEstado = 'AC'))
-        SELECT @errorCode = 1, @errorMessage = 'El cliente se encuentra activo';
-    ELSE
-        UPDATE Clientes SET Nombre = @nombre, Apellido = @apellido, FechaNacimiento = @fechaNacimiento WHERE Id = @idCliente;
+    BEGIN TRY
+        IF (@fechaNacimiento IS NOT NULL AND @esMayor = 0)
+            RAISERROR('El cliente es menor de edad', 11, 1);
+        ELSE IF(@email IS NOT NULL AND dbo.EmailValido(@email) = 0)
+            RAISERROR('El email posee un formato invalido', 11, 1);
+        ELSE IF(@nombre IS NULL OR @apellido IS NULL)
+            RAISERROR('El nombre y apellido son obligatorios', 11, 1);
+        ELSE IF NOT (EXISTS(SELECT Id FROM Clientes WHERE Id = @idCliente))
+            RAISERROR('El cliente no existe', 11, 1);
+        ELSE IF(EXISTS(SELECT Id FROM Clientes WHERE Id = @idCliente AND IdEstado = 'AC'))
+            RAISERROR('El cliente se encuentra activo', 11, 1);
+        ELSE
+            UPDATE Clientes SET Nombre = @nombre, Apellido = @apellido, FechaNacimiento = @fechaNacimiento WHERE Id = @idCliente;
+    END TRY
+    BEGIN CATCH
+        SELECT @errorCode = ERROR_NUMBER(), @errorMessage = ERROR_MESSAGE()
+    END CATCH
 end
 go
 
