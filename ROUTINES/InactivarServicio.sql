@@ -1,28 +1,32 @@
-CREATE PROCEDURE InactivarServicio @idServicio INT
+CREATE PROCEDURE InactivarServicio 
+    @idServicio INT,
+    @errorMessage VARCHAR(255) OUTPUT,
+    @errorCode INT OUTPUT
 AS
 DECLARE
     @idCliente                INT,
-    @cantidadServiciosActivos INT,
-    @errorMessage             VARCHAR(255),
-    @errorCode                INT;
+    @cantidadServiciosActivos INT
 BEGIN
     IF NOT EXISTS(SELECT * FROM ServiciosContratados WHERE NroServicio = @idServicio)
         SELECT @errorCode = 1, @errorMessage = 'El servicio no existe'
     ELSE
         BEGIN
-            BEGIN TRAN
-                UPDATE ServiciosContratados SET IdEstadoServicio = 'IN' WHERE NroServicio = @idServicio;
-                SELECT @idCliente = IdCliente FROM ServiciosContratados WHERE NroServicio = @idServicio;
-                SELECT @cantidadServiciosActivos = COUNT(*)
-                FROM ServiciosContratados
-                WHERE IdCliente = @idCliente
-                  AND IdEstadoServicio = 'AC';
-                IF (@cantidadServiciosActivos = 0)
-                    UPDATE Clientes SET IdEstado = 'IN' where Id = @idCliente;
-            COMMIT TRAN
+            BEGIN TRY
+                BEGIN TRAN
+                    UPDATE ServiciosContratados SET IdEstadoServicio = 'IN' WHERE NroServicio = @idServicio;
+                    SELECT @idCliente = IdCliente FROM ServiciosContratados WHERE NroServicio = @idServicio;
+                    SELECT @cantidadServiciosActivos = COUNT(*)
+                    FROM ServiciosContratados
+                    WHERE IdCliente = @idCliente
+                      AND IdEstadoServicio = 'AC';
+                    IF (@cantidadServiciosActivos = 0)
+                        UPDATE Clientes SET IdEstado = 'IN' where Id = @idCliente;
+                COMMIT TRAN
+            END TRY
+            BEGIN CATCH
+                ROLLBACK TRANSACTION
+            END CATCH
         END
-
-    SELECT @errorMessage as 'ErrorMessage', @errorCode as 'ErrorCode';
 end
 go
 

@@ -1,9 +1,12 @@
-CREATE PROCEDURE CrearTicket @idTipologia VARCHAR(2), @nroServicio INT, @idCliente INT, @login VARCHAR(25)
+CREATE PROCEDURE CrearTicket
+    @idTipologia VARCHAR(2),
+    @nroServicio INT,
+    @idCliente INT,
+    @login VARCHAR(25),
+    @idTicket INT OUTPUT,
+    @errorMessage VARCHAR(255) OUTPUT,
+    @errorCode INT OUTPUT
 AS
-    DECLARE
-    @idTicket   INT,
-    @errorMessage VARCHAR(255),
-    @errorCode    INT;
 BEGIN
     IF NOT EXISTS(SELECT * FROM Tipologias WHERE Id = @idTipologia)
         SELECT @errorCode = 4, @errorMessage = 'La tipologia no existe'
@@ -17,20 +20,23 @@ BEGIN
         SELECT @errorCode = 2, @errorMessage = 'No existe dicha tipologia para dicho servicio'
     ELSE
         BEGIN
-            BEGIN TRAN
-                INSERT INTO Tickets (FechaApertura, IdTipologia, NroServicio, IdCliente, IdEstado, Login)
-                VALUES (getdate(), @idTipologia, @nroServicio, @idCliente, 'AB', 'amartinez')
-            
-                SELECT @idTicket = SCOPE_IDENTITY();
-    
-                INSERT INTO HistorialEstados
-                    (ViejoEstado, NuevoEstado, IdTicket, FechaHoraInicio)
-                VALUES
-                    (NULL, 'AB', @idTicket, GETDATE())
-            COMMIT TRAN
-        END
+            BEGIN TRY
+                BEGIN TRAN
+                    INSERT INTO Tickets (FechaApertura, IdTipologia, NroServicio, IdCliente, IdEstado, Login)
+                    VALUES (getdate(), @idTipologia, @nroServicio, @idCliente, 'AB', 'amartinez')
+                
+                    SELECT @idTicket = SCOPE_IDENTITY();
         
-        SELECT @idTicket as 'IdTicket', @errorMessage as 'ErrorMessage', @errorCode as 'ErrorCode';
+                    INSERT INTO HistorialEstados
+                        (ViejoEstado, NuevoEstado, IdTicket, FechaHoraInicio)
+                    VALUES
+                        (NULL, 'AB', @idTicket, GETDATE())
+                COMMIT TRAN
+            END TRY
+            BEGIN CATCH
+                ROLLBACK TRANSACTION
+            END CATCH
+        END
 END
 go
 
