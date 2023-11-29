@@ -719,9 +719,9 @@ FROM Tickets
 WHERE Id = @idTicket
 
 IF (@fechaCierre IS NOT NULL AND @errorMessage IS NULL)
-    PRINT 'TEST CASE #10 (cambiar ticket a cerrado marca fecha cierre): OK'
+    PRINT 'TEST CASE #14 (cambiar ticket a cerrado marca fecha cierre): OK'
 ELSE
-    PRINT 'TEST CASE #10 (cambiar ticket a cerrado marca fecha cierre): FAILED'
+    PRINT 'TEST CASE #14 (cambiar ticket a cerrado marca fecha cierre): FAILED'
 PRINT @errorMessage
 GO
 
@@ -805,14 +805,14 @@ FROM Clientes
 WHERE Id = @idCliente;
 
 IF (@nuevoNombre = 'Martin' AND @nuevoApellido = 'Pepe' AND @nuevaFecha = '1994-02-02')
-    PRINT 'TEST CASE #15 (edito cliente prospecto): OK'
+    PRINT 'TEST CASE #16 (edito cliente prospecto): OK'
 ELSE
-    PRINT 'TEST CASE #15 (edito cliente prospecto): FAILED'
+    PRINT 'TEST CASE #16 (edito cliente prospecto): FAILED'
 PRINT @errorMessage
 GO
 
 -----------------------------------
------ TEST CASE #16
+----- TEST CASE #17
 ----- Prueba: Modificar el nombre, apellido o fecha de nacimiento para un prospecto
 ----- Resultado Esperado: Se debe modificar el dato
 
@@ -852,8 +852,8 @@ EXEC EditarCliente
      @errorCode OUTPUT
 
 IF (@errorMessage = 'El nombre, apellido y fecha de nacimiento solo pueden ser editados cuando el cliente es un prospecto.')
-    PRINT 'TEST CASE #16 (no puedo editar fechanac de cliente activo): OK'
+    PRINT 'TEST CASE #17 (no puedo editar fechanac de cliente activo): OK'
 ELSE
-    PRINT 'TEST CASE #16 (no puedo editar fechanac de cliente activo): FAILED'
+    PRINT 'TEST CASE #17 (no puedo editar fechanac de cliente activo): FAILED'
 PRINT @errorMessage
 GO
