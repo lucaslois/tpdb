@@ -8,11 +8,11 @@ DECLARE
     @cantidadServiciosActivos INT
 BEGIN
     BEGIN TRY
-        BEGIN TRANSACTION
         IF NOT EXISTS(SELECT * FROM ServiciosContratados WHERE NroServicio = @idServicio)
             RAISERROR('El servicio no existe', 11, 1); 
         ELSE
             BEGIN
+                BEGIN TRANSACTION
                 UPDATE ServiciosContratados SET IdEstadoServicio = 'IN' WHERE NroServicio = @idServicio;
                 SELECT @idCliente = IdCliente FROM ServiciosContratados WHERE NroServicio = @idServicio;
                 SELECT @cantidadServiciosActivos = COUNT(*)
@@ -27,7 +27,8 @@ BEGIN
             END
     END TRY
     BEGIN CATCH
-        ROLLBACK TRANSACTION
+        IF(@@TRANCOUNT > 0)
+            ROLLBACK TRANSACTION
         SELECT @errorCode = ERROR_NUMBER(), @errorMessage = ERROR_MESSAGE()
     END CATCH
 end

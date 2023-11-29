@@ -10,8 +10,6 @@ DECLARE
 BEGIN
     SELECT @estadoActual = IdEstado, @idCliente = IdCliente FROM Tickets WHERE Id = @idTicket
     BEGIN TRY
-        BEGIN TRAN
-
         IF NOT EXISTS (SELECT * FROM Tickets WHERE Id = @idTicket)
             RAISERROR  ('El ticket especificado no existe', 11, 1);
         ELSE IF NOT EXISTS (SELECT * FROM EstadoTickets WHERE Id = @idNuevoEstado)
@@ -24,17 +22,15 @@ BEGIN
             RAISERROR  ('Si el ticket está Pendiente Cliente, solo se puede mover a En Progreso', 11, 1);
         ELSE
             BEGIN
+                BEGIN TRANSACTION ;
                 UPDATE Tickets SET IdEstado = @idNuevoEstado WHERE Id = @idTicket;
-                INSERT INTO Notificaciones (IdTicket, IdCliente, CuerpoMail)
-                VALUES (@idTicket, @idCliente, FORMATMESSAGE('Se ha cambiado el estado del ticket %d a %s',
-                                                                @idTicket, @idNuevoEstado));
 
                 IF (@idNuevoEstado = 'RE')
                     UPDATE Tickets SET FechaResolucion = getdate() WHERE Id = @idTicket
                 IF (@idNuevoEstado = 'CE')
                     UPDATE Tickets SET FechaCierre = getdate() WHERE Id = @idTicket
 
-               INSERT INTO HistorialEstados
+                INSERT INTO HistorialEstados
                     (ViejoEstado, NuevoEstado, IdTicket, FechaHoraInicio)
                 VALUES
                     (@estadoActual, @idNuevoEstado, @idTicket, GETDATE())
@@ -43,9 +39,9 @@ BEGIN
             END
     END TRY
     BEGIN CATCH
-        PRINT 'ERROR'
         SELECT @errorCode = ERROR_NUMBER(), @errorMessage = ERROR_MESSAGE()
-        ROLLBACK
+        IF(@@TRANCOUNT > 0)
+            ROLLBACK TRANSACTION
     END CATCH
 END
 go
